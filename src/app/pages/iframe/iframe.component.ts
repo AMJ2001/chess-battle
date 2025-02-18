@@ -8,6 +8,7 @@ import { NgxChessBoardComponent } from 'ngx-chess-board';
 export class IframeComponent implements OnInit, AfterViewInit {
   @ViewChild(NgxChessBoardComponent) board!: NgxChessBoardComponent;
   isWhiteBoard: boolean;
+  isCheckmate: boolean = false;
 
   constructor() {
     this.isWhiteBoard = window.location.search.includes('player=white');
@@ -18,17 +19,23 @@ export class IframeComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.board.setFEN(this.isWhiteBoard ? 'start' : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
-    this.board.lightDisabled = !this.isWhiteBoard;
-    this.board.darkDisabled = this.isWhiteBoard;
-
-    if (!this.isWhiteBoard) {
-      setTimeout(() => this.board.reverse(), 100);
-    }
+    this.loadGameState();
   }
 
   onMove(event: any): void {
-    window.parent.postMessage({ move: event.move }, '*');
+    const fen = this.board.getFEN();
+    localStorage.setItem('chessGameState', fen);
+    window.parent.postMessage({ move: event.move, fen }, '*');
+  }
+
+  onCheckmate(): void {
+    this.isCheckmate = true;
+  }
+
+  resetGame(): void {
+    this.board.reset();
+    this.isCheckmate = false;
+    localStorage.removeItem('chessGameState');
   }
 
   receiveMessage(event: MessageEvent): void {
@@ -36,9 +43,31 @@ export class IframeComponent implements OnInit, AfterViewInit {
 
     if (event.data?.move) {
       this.board.move(event.data.move);
-    } else if (event.data?.type === 'changeColor') {
+    }  else if (event.data?.type === 'changeColor') {
       this.board.darkTileColor = event.data.colors.dark;
       this.board.lightTileColor = event.data.colors.light;
+    } else if (event.data?.fen) {
+      this.board.setFEN(event.data.fen);
+    }
+  }
+
+  loadGameState(): void {
+    const savedState = localStorage.getItem('chessGameState');
+    if (savedState) {
+      this.board.setFEN(savedState);
+    } else {
+      this.board.setFEN(
+        this.isWhiteBoard
+          ? 'start'
+          : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+      );
+    }
+
+    this.board.lightDisabled = !this.isWhiteBoard;
+    this.board.darkDisabled = this.isWhiteBoard;
+
+    if (!this.isWhiteBoard) {
+      setTimeout(() => this.board.reverse(), 100);
     }
   }
 }

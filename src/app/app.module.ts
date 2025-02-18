@@ -5,6 +5,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { MainComponent } from './pages/main/main.component';
 import { IframeCompModule } from './pages/iframe/iframe.module';
+import { FormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
@@ -15,7 +16,8 @@ import { IframeCompModule } from './pages/iframe/iframe.module';
     BrowserModule,
     AppRoutingModule,
     NgxChessBoardModule,
-    IframeCompModule
+    IframeCompModule,
+    FormsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

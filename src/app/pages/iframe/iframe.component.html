@@ -1,1 +1,8 @@
-<ngx-chess-board #board (moveChange)="onMove($event)"></ngx-chess-board>
+<ngx-chess-board #board (moveChange)="onMove($event)" (checkmate)="onCheckmate()"></ngx-chess-board>
+
+<div *ngIf="isCheckmate" class="popup">
+  <div class="popup-content">
+    <h2>Checkmate! 🎉</h2>
+    <button (click)="resetGame()">Reset Game</button>
+  </div>
+</div>

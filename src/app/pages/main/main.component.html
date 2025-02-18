@@ -11,6 +11,13 @@
     </select>
   </div>
 
+  <div class="controls">
+    <button (click)="resetGame()">Reset Game</button>
+    <button (click)="createOnlineGame()">Create Online Game</button>
+    <input type="text" [(ngModel)]="gameId" placeholder="Enter game code">
+    <button (click)="joinOnlineGame(gameId)">Join Game</button>
+  </div>
+
   <div class="iframe-container">
     <iframe #iframe1 src="/iframe?player=white" id="iframe1"></iframe>
     <iframe #iframe2 src="/iframe?player=black" id="iframe2"></iframe>

@@ -1,13 +1,39 @@
-import { Component, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnInit } from '@angular/core';
+import { GameStateService } from 'src/app/services/game-state.service';
+import { FirebaseService } from 'src/app/services/firebase.service';
 
 @Component({
   selector: 'app-main',
   templateUrl: './main.component.html',
   styleUrls: ['./main.component.scss'],
 })
-export class MainComponent implements AfterViewInit {
+export class MainComponent implements AfterViewInit, OnInit {
   @ViewChild('iframe1') iframe1!: ElementRef;
   @ViewChild('iframe2') iframe2!: ElementRef;
+  
+  boardColors: any = {
+    classic: { dark: '#b58863', light: '#f0d9b5' },
+    blue: { dark: '#1f4e78', light: '#cce7ff' },
+    green: { dark: '#556b2f', light: '#dff4c6' },
+    purple: { dark: '#663399', light: '#ffc0cb' },
+  };
+
+  selectedColorScheme: string = 'classic';
+  gameId: string | null = null;
+  isOnlineMode: boolean = false;
+
+  constructor(private gameStateService: GameStateService, private firebaseService: FirebaseService) {}
+
+  ngOnInit(): void {
+    // Load saved board color from local storage
+    const savedColor = this.gameStateService.getBoardColor();
+    this.selectedColorScheme = Object.keys(this.boardColors).find(
+      (key) => JSON.stringify(this.boardColors[key]) === JSON.stringify(savedColor)
+    ) || 'classic';
+
+    // Apply the saved color
+    this.updateBoardColors();
+  }
 
   ngAfterViewInit(): void {
     window.addEventListener('message', this.onMessage.bind(this));
@@ -22,25 +48,58 @@ export class MainComponent implements AfterViewInit {
           ? this.iframe2.nativeElement.contentWindow
           : this.iframe1.nativeElement.contentWindow;
       targetIframe?.postMessage(event.data, '*');
+
+      // Handle online mode game sync
+      if (this.isOnlineMode && this.gameId) {
+        this.firebaseService.updateGame(this.gameId, event.data.move, event.data.turn);
+      }
+    }
+
+    if (event.data?.checkmate) {
+      alert('Checkmate! Game over.');
+      this.resetGame();
     }
   }
 
   changeBoardColor(event: any): void {
-    const colorScheme = event.target.value;
-    const colorMap: any = {
-      classic: { dark: '#b58863', light: '#f0d9b5' },
-      blue: { dark: '#1f4e78', light: '#cce7ff' },
-      green: { dark: '#556b2f', light: '#dff4c6' },
-      purple: { dark: '#663399', light: '#ffc0cb' },
-    };
+    this.selectedColorScheme = event.target.value;
+    const selectedColors = this.boardColors[this.selectedColorScheme];
 
-    const selectedColors = colorMap[colorScheme];
+    // Save to local storage
+    this.gameStateService.setBoardColor(selectedColors.dark, selectedColors.light);
 
+    // Apply to iframes
+    this.updateBoardColors();
+  }
+
+  updateBoardColors(): void {
+    const colors = this.boardColors[this.selectedColorScheme];
     [this.iframe1, this.iframe2].forEach((iframe) => {
-      iframe.nativeElement.contentWindow?.postMessage(
-        { type: 'changeColor', colors: selectedColors },
-        '*'
-      );
+      iframe.nativeElement.contentWindow?.postMessage({ type: 'changeColor', colors }, '*');
+    });
+  }
+
+  resetGame(): void {
+    [this.iframe1, this.iframe2].forEach((iframe) => {
+      iframe.nativeElement.contentWindow?.postMessage({ type: 'resetGame' }, '*');
+    });
+  }
+
+  createOnlineGame(): void {
+    this.gameId = this.firebaseService.createGame();
+    this.isOnlineMode = true;
+    alert(`Game created! Share this code: ${this.gameId}`);
+  }
+
+  joinOnlineGame(code: string | null): void {
+    this.gameId = code;
+    this.isOnlineMode = true;
+    this.firebaseService.joinGame(code as string).subscribe((gameData) => {
+      if (gameData?.moves) {
+        [this.iframe1, this.iframe2].forEach((iframe) => {
+          iframe.nativeElement.contentWindow?.postMessage({ type: 'loadMoves', moves: gameData.moves }, '*');
+        });
+      }
     });
   }
 }
