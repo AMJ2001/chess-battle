@@ -1,4 +1,18 @@
-<div class="iframe-container">
-  <iframe #iframe1 src="/iframe?color=white" id="iframe1"></iframe>
-  <iframe #iframe2 src="/iframe?color=black" id="iframe2"></iframe>
+<div class="main-container">
+  <h1 class="title">Chess Battle ♟️🔥</h1>
+
+  <div class="controls">
+    <label for="colorSelect">Choose Board Theme:</label>
+    <select id="colorSelect" (change)="changeBoardColor($event)">
+      <option value="classic">Classic (Brown & Beige)</option>
+      <option value="blue">Blue & White</option>
+      <option value="green">Green & Cream</option>
+      <option value="purple">Purple & Pink</option>
+    </select>
+  </div>
+
+  <div class="iframe-container">
+    <iframe #iframe1 src="/iframe?player=white" id="iframe1"></iframe>
+    <iframe #iframe2 src="/iframe?player=black" id="iframe2"></iframe>
+  </div>
 </div>

@@ -8,8 +8,37 @@
   padding: 0 20px;
 }
 
-iframe {
-  width: 45%;
-  height: 80%;
-  border: none;
+.main-container {
+  text-align: center;
+  padding: 20px;
+
+  .title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #ffcc00;
+    text-shadow: 2px 2px 5px black;
+    margin-bottom: 15px;
+  }
+
+  .controls {
+    margin-bottom: 10px;
+
+    select {
+      padding: 5px;
+      font-size: 1rem;
+      border-radius: 5px;
+    }
+  }
+
+  .iframe-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  iframe {
+    width: 45%;
+    height: 80%;
+    border: none;
+  }
 }

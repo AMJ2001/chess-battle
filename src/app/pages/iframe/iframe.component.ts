@@ -7,39 +7,38 @@ import { NgxChessBoardComponent } from 'ngx-chess-board';
 })
 export class IframeComponent implements OnInit, AfterViewInit {
   @ViewChild(NgxChessBoardComponent) board!: NgxChessBoardComponent;
-  private color: 'white' | 'black';
+  isWhiteBoard: boolean;
 
   constructor() {
-    this.color = new URLSearchParams(window.location.search).get('color') as 'white' | 'black';
+    this.isWhiteBoard = window.location.search.includes('player=white');
   }
 
   ngOnInit(): void {
-    window.addEventListener('message', this.receiveMove.bind(this));
+    window.addEventListener('message', this.receiveMessage.bind(this));
   }
 
   ngAfterViewInit(): void {
-    this.setMovePermissions();
+    this.board.setFEN(this.isWhiteBoard ? 'start' : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+    this.board.lightDisabled = !this.isWhiteBoard;
+    this.board.darkDisabled = this.isWhiteBoard;
+
+    if (!this.isWhiteBoard) {
+      setTimeout(() => this.board.reverse(), 100);
+    }
   }
 
   onMove(event: any): void {
-    if (!this.board) return;
-
-    const move = event.move;
-    window.parent.postMessage({ move, color: this.color }, '*');
-
-    this.setMovePermissions(false);
+    window.parent.postMessage({ move: event.move }, '*');
   }
 
-  receiveMove(event: MessageEvent): void {
-    if (event.origin !== window.location.origin || !event.data?.move || event.data.color === this.color) return;
+  receiveMessage(event: MessageEvent): void {
+    if (event.origin !== window.location.origin) return;
 
-    this.board.move(event.data.move);
-    this.setMovePermissions(true);
-  }
-
-  private setMovePermissions(enable = this.color === 'white') {
-    if (!this.board) return;
-    this.board.lightDisabled = !enable;
-    this.board.darkDisabled = enable;
+    if (event.data?.move) {
+      this.board.move(event.data.move);
+    } else if (event.data?.type === 'changeColor') {
+      this.board.darkTileColor = event.data.colors.dark;
+      this.board.lightTileColor = event.data.colors.light;
+    }
   }
 }
