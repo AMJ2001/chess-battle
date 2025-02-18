@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, OnInit } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnInit, ChangeDetectorRef } from '@angular/core';
 import { GameStateService } from 'src/app/services/game-state.service';
 import { FirebaseService } from 'src/app/services/firebase.service';
 
@@ -22,21 +22,19 @@ export class MainComponent implements AfterViewInit, OnInit {
   gameId: string | null = null;
   isOnlineMode: boolean = false;
 
-  constructor(private gameStateService: GameStateService, private firebaseService: FirebaseService) {}
+  constructor(private gameStateService: GameStateService, private firebaseService: FirebaseService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    // Load saved board color from local storage
     const savedColor = this.gameStateService.getBoardColor();
     this.selectedColorScheme = Object.keys(this.boardColors).find(
       (key) => JSON.stringify(this.boardColors[key]) === JSON.stringify(savedColor)
     ) || 'classic';
-
-    // Apply the saved color
     this.updateBoardColors();
   }
 
   ngAfterViewInit(): void {
     window.addEventListener('message', this.onMessage.bind(this));
+    this.cdr.detectChanges();
   }
 
   onMessage(event: MessageEvent): void {
@@ -65,23 +63,20 @@ export class MainComponent implements AfterViewInit, OnInit {
     this.selectedColorScheme = event.target.value;
     const selectedColors = this.boardColors[this.selectedColorScheme];
 
-    // Save to local storage
     this.gameStateService.setBoardColor(selectedColors.dark, selectedColors.light);
-
-    // Apply to iframes
     this.updateBoardColors();
   }
 
   updateBoardColors(): void {
     const colors = this.boardColors[this.selectedColorScheme];
     [this.iframe1, this.iframe2].forEach((iframe) => {
-      iframe.nativeElement.contentWindow?.postMessage({ type: 'changeColor', colors }, '*');
+      iframe?.nativeElement.contentWindow?.postMessage({ type: 'changeColor', colors }, '*');
     });
   }
 
   resetGame(): void {
     [this.iframe1, this.iframe2].forEach((iframe) => {
-      iframe.nativeElement.contentWindow?.postMessage({ type: 'resetGame' }, '*');
+      iframe?.nativeElement.contentWindow?.postMessage({ type: 'resetGame' }, '*');
     });
   }
 
@@ -97,7 +92,7 @@ export class MainComponent implements AfterViewInit, OnInit {
     this.firebaseService.joinGame(code as string).subscribe((gameData) => {
       if (gameData?.moves) {
         [this.iframe1, this.iframe2].forEach((iframe) => {
-          iframe.nativeElement.contentWindow?.postMessage({ type: 'loadMoves', moves: gameData.moves }, '*');
+          iframe?.nativeElement.contentWindow?.postMessage({ type: 'loadMoves', moves: gameData.moves }, '*');
         });
       }
     });

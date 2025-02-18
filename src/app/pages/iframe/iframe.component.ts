@@ -1,4 +1,4 @@
-import { Component, ViewChild, OnInit, AfterViewInit } from '@angular/core';
+import { Component, ViewChild, OnInit, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { NgxChessBoardComponent } from 'ngx-chess-board';
 
 @Component({
@@ -10,7 +10,7 @@ export class IframeComponent implements OnInit, AfterViewInit {
   isWhiteBoard: boolean;
   isCheckmate: boolean = false;
 
-  constructor() {
+  constructor(private cdr: ChangeDetectorRef) {
     this.isWhiteBoard = window.location.search.includes('player=white');
   }
 
@@ -20,6 +20,7 @@ export class IframeComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     this.loadGameState();
+    this.cdr.detectChanges();
   }
 
   onMove(event: any): void {
