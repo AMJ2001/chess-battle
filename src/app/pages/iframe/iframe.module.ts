@@ -10,7 +10,7 @@ import { IframeComponent } from './iframe.component';
   ],
   imports: [
     CommonModule,
-    NgxChessBoardModule,  // Import NgxChessBoardModule here
+    NgxChessBoardModule,
   ],
   exports: [IframeComponent]
 })

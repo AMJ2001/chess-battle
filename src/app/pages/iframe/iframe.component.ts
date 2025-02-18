@@ -1,6 +1,5 @@
-import { Component, ViewChild, OnInit, AfterViewInit, ChangeDetectorRef } from '@angular/core';
+import { Component, ViewChild, OnInit, AfterViewInit } from '@angular/core';
 import { NgxChessBoardComponent } from 'ngx-chess-board';
-import { GameStateService } from 'src/app/services/game-state.service';
 
 @Component({
   selector: 'app-iframe',
@@ -8,66 +7,39 @@ import { GameStateService } from 'src/app/services/game-state.service';
 })
 export class IframeComponent implements OnInit, AfterViewInit {
   @ViewChild(NgxChessBoardComponent) board!: NgxChessBoardComponent;
-  private isWhiteBoard: boolean;
+  private color: 'white' | 'black';
 
-  constructor(private gameStateService: GameStateService, private cdr: ChangeDetectorRef) {
-    this.isWhiteBoard = window.location.href.includes('white');
+  constructor() {
+    this.color = new URLSearchParams(window.location.search).get('color') as 'white' | 'black';
   }
 
   ngOnInit(): void {
-    this.gameStateService.gameState$.subscribe(state => {
-      if (state) {
-        this.loadBoardState(state);
-      }
-    });
-
-    this.gameStateService.currentTurn$.subscribe(turn => {
-      if (this.isWhiteBoard) {
-        this.board && (this.board.lightDisabled = turn !== 'white');
-      } else {
-        this.board && (this.board.darkDisabled = turn !== 'black');
-      }
-      this.cdr.detectChanges();
-    });
-
     window.addEventListener('message', this.receiveMove.bind(this));
   }
 
   ngAfterViewInit(): void {
-    this.cdr.detectChanges();
+    this.setMovePermissions();
   }
 
   onMove(event: any): void {
-    const currentTurn = this.gameStateService.getCurrentTurn();
-    if ((this.isWhiteBoard && currentTurn === 'white') || (!this.isWhiteBoard && currentTurn === 'black')) {
-      window.parent.postMessage({ move: event.move }, '*');
-      this.updateGameState(event.move);
-    }
+    if (!this.board) return;
+
+    const move = event.move;
+    window.parent.postMessage({ move, color: this.color }, '*');
+
+    this.setMovePermissions(false);
   }
 
   receiveMove(event: MessageEvent): void {
-    if (event.origin !== window.location.origin) return;
+    if (event.origin !== window.location.origin || !event.data?.move || event.data.color === this.color) return;
 
-    const moveData = event.data;
-    if (moveData?.move) {
-      this.board.move(moveData.move);
-      this.updateGameState(moveData.move);
-    }
+    this.board.move(event.data.move);
+    this.setMovePermissions(true);
   }
 
-  private updateGameState(move: any): void {
-    const currentState = this.gameStateService.getCurrentState() || [];
-    currentState.push(move);
-    const nextTurn = this.isWhiteBoard ? 'black' : 'white';
-    this.gameStateService.updateGameState(currentState, nextTurn);
-  }
-
-  private loadBoardState(state: any): void {
-    if (this.board) {
-      this.board.reset();
-      state.forEach((move: any) => {
-        this.board.move(move);
-      });
-    }
+  private setMovePermissions(enable = this.color === 'white') {
+    if (!this.board) return;
+    this.board.lightDisabled = !enable;
+    this.board.darkDisabled = enable;
   }
 }
