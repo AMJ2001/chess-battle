@@ -18,8 +18,12 @@
     <button (click)="joinOnlineGame(gameId)">Join Game</button>
   </div>
 
-  <div class="iframe-container">
-    <iframe #iframe1 src="/iframe?player=white" id="iframe1"></iframe>
-    <iframe #iframe2 src="/iframe?player=black" id="iframe2"></iframe>
+    <div class="iframe-container" *ngIf="isOnlineMode">
+      <iframe *ngIf="createdByCurrentUser" src="/iframe?player=white" id="iframe1"></iframe>
+      <iframe *ngIf="!createdByCurrentUser" #iframe2 src="/iframe?player=black" id="iframe2"></iframe>
+    </div>
+    <div class="iframe-container" *ngIf="!isOnlineMode">
+      <iframe #iframe1 src="/iframe?player=white" id="iframe1"></iframe>
+      <iframe #iframe2 src="/iframe?player=black" id="iframe2"></iframe>
+    </div>
   </div>
-</div>

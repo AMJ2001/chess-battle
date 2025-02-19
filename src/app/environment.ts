@@ -1,12 +1,12 @@
 export const environment = {
-  production: false,
+  production: true,
   firebase: {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID",
-    measurementId: "YOUR_MEASUREMENT_ID"
+    apiKey: "---------",
+    authDomain: "chess-battle-app.firebaseapp.com",
+    projectId: "chess-battle-app",
+    storageBucket: "chess-battle-app.firebasestorage.app",
+    messagingSenderId: "142204961459",
+    appId: "1:142204961459:web:19f985077dcdcd9d48e6c6",
+    measurementId: "G-WHQCXJZ7FZ"
   }
 };

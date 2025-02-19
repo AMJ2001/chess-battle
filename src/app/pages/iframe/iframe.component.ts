@@ -1,21 +1,35 @@
 import { Component, ViewChild, OnInit, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { NgxChessBoardComponent } from 'ngx-chess-board';
+import { GameStateService } from 'src/app/services/game-state.service';
 
 @Component({
   selector: 'app-iframe',
   templateUrl: './iframe.component.html',
 })
+
 export class IframeComponent implements OnInit, AfterViewInit {
   @ViewChild(NgxChessBoardComponent) board!: NgxChessBoardComponent;
   isWhiteBoard: boolean;
   isCheckmate: boolean = false;
 
-  constructor(private cdr: ChangeDetectorRef) {
+  constructor(private cdr: ChangeDetectorRef, private gameStateService: GameStateService) {
     this.isWhiteBoard = window.location.search.includes('player=white');
   }
 
   ngOnInit(): void {
     window.addEventListener('message', this.receiveMessage.bind(this));
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === 'resetGame') {
+        this.resetGame();
+      }
+    });
+    this.gameStateService.gameReset$.subscribe((isReset) => {
+      if (isReset) {
+        this.board.reset();
+        this.isCheckmate = false;
+        localStorage.removeItem('chessGameState');
+      }
+    });
   }
 
   ngAfterViewInit(): void {
@@ -32,8 +46,8 @@ export class IframeComponent implements OnInit, AfterViewInit {
   onCheckmate(): void {
     this.isCheckmate = true;
   }
-
-  resetGame(): void {
+  
+  resetGame() {
     this.board.reset();
     this.isCheckmate = false;
     localStorage.removeItem('chessGameState');

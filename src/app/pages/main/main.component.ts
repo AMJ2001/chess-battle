@@ -21,6 +21,7 @@ export class MainComponent implements AfterViewInit, OnInit {
   selectedColorScheme: string = 'classic';
   gameId: string | null = null;
   isOnlineMode: boolean = false;
+  createdByCurrentUser = false;
 
   constructor(private gameStateService: GameStateService, private firebaseService: FirebaseService, private cdr: ChangeDetectorRef) {}
 
@@ -30,6 +31,13 @@ export class MainComponent implements AfterViewInit, OnInit {
       (key) => JSON.stringify(this.boardColors[key]) === JSON.stringify(savedColor)
     ) || 'classic';
     this.updateBoardColors();
+  
+    this.gameStateService.gameState$.subscribe((state) => {
+      if (state?.isReset) {
+        this.selectedColorScheme = 'classic';
+        this.updateBoardColors();
+      }
+    });
   }
 
   ngAfterViewInit(): void {
@@ -47,7 +55,6 @@ export class MainComponent implements AfterViewInit, OnInit {
           : this.iframe1.nativeElement.contentWindow;
       targetIframe?.postMessage(event.data, '*');
 
-      // Handle online mode game sync
       if (this.isOnlineMode && this.gameId) {
         this.firebaseService.updateGame(this.gameId, event.data.move, event.data.turn);
       }
@@ -75,14 +82,24 @@ export class MainComponent implements AfterViewInit, OnInit {
   }
 
   resetGame(): void {
-    [this.iframe1, this.iframe2].forEach((iframe) => {
-      iframe?.nativeElement.contentWindow?.postMessage({ type: 'resetGame' }, '*');
-    });
+    const confirmReset = confirm('Are you sure you want to reset the game?');
+    if (confirmReset) {
+      [this.iframe1, this.iframe2].forEach((iframe, index) => {
+        if (iframe?.nativeElement.contentWindow) {
+          iframe.nativeElement.contentWindow.postMessage({ type: 'resetGame' }, '*');
+        } else {
+          console.warn(`Iframe ${index + 1} not found or not loaded`);
+        }
+      });
+      if (this.gameId) {
+        this.firebaseService.updateGame(this.gameId, [], 'white', true);
+      }
+    }
   }
 
   createOnlineGame(): void {
+    this.createdByCurrentUser = true;
     this.gameId = this.firebaseService.createGame();
-    this.isOnlineMode = true;
     alert(`Game created! Share this code: ${this.gameId}`);
   }
 
@@ -91,9 +108,10 @@ export class MainComponent implements AfterViewInit, OnInit {
     this.isOnlineMode = true;
     this.firebaseService.joinGame(code as string).subscribe((gameData) => {
       if (gameData?.moves) {
-        [this.iframe1, this.iframe2].forEach((iframe) => {
+        [this.iframe1].forEach((iframe) => {
           iframe?.nativeElement.contentWindow?.postMessage({ type: 'loadMoves', moves: gameData.moves }, '*');
         });
+        this.iframe2?.nativeElement.classList.add('hidden');
       }
     });
   }
