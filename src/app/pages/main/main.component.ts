@@ -23,7 +23,7 @@ export class MainComponent implements AfterViewInit, OnInit {
   gameId: string | null = null;
   isOnlineMode: boolean = false;
   createdByCurrentUser = false;
-  moveHistory!: Set<string>;
+  moveHistory = new Set<string>();
   elapsedTime: number = 0;
   timerInterval: any;
 
@@ -35,7 +35,12 @@ export class MainComponent implements AfterViewInit, OnInit {
       (key) => JSON.stringify(this.boardColors[key]) === JSON.stringify(savedColor)
     ) || 'classic';
     this.updateBoardColors();
-  
+
+    const storedMoves = localStorage.getItem('movesSet');
+    if (storedMoves) {
+      this.moveHistory = new Set(JSON.parse(storedMoves));
+    }
+
     this.gameStateService.gameState$.subscribe((state) => {
       if (state?.isReset) {
         this.selectedColorScheme = 'classic';
@@ -61,6 +66,7 @@ export class MainComponent implements AfterViewInit, OnInit {
       targetIframe?.postMessage(event.data, '*');
 
       this.moveHistory.add(event.data.move);
+      localStorage.setItem('movesSet', JSON.stringify([...this.moveHistory]));
 
       if (this.moveHistory.size === 1) {
         this.startTimer();
