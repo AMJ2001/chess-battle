@@ -18,6 +18,18 @@
     <button (click)="joinOnlineGame(gameId)">Join Game</button>
   </div>
 
+  <div class="info-bar">
+    <div class="move-history">
+      <label for="moveHistoryDropdown">Move History:</label>
+      <select id="moveHistoryDropdown">
+        <option *ngFor="let move of moveHistory">{{ move }}</option>
+      </select>
+    </div>
+    <div class="timer">
+      Time Elapsed: {{ elapsedTime }}s
+    </div>
+  </div>
+
     <div class="iframe-container" *ngIf="isOnlineMode">
       <iframe *ngIf="createdByCurrentUser" src="/iframe?player=white" id="iframe1"></iframe>
       <iframe *ngIf="!createdByCurrentUser" #iframe2 src="/iframe?player=black" id="iframe2"></iframe>

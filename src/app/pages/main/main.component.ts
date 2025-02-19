@@ -22,6 +22,9 @@ export class MainComponent implements AfterViewInit, OnInit {
   gameId: string | null = null;
   isOnlineMode: boolean = false;
   createdByCurrentUser = false;
+  moveHistory!: Set<string>;
+  elapsedTime: number = 0;
+  timerInterval: any;
 
   constructor(private gameStateService: GameStateService, private firebaseService: FirebaseService, private cdr: ChangeDetectorRef) {}
 
@@ -36,6 +39,7 @@ export class MainComponent implements AfterViewInit, OnInit {
       if (state?.isReset) {
         this.selectedColorScheme = 'classic';
         this.updateBoardColors();
+        this.resetTimer();
       }
     });
   }
@@ -55,6 +59,12 @@ export class MainComponent implements AfterViewInit, OnInit {
           : this.iframe1.nativeElement.contentWindow;
       targetIframe?.postMessage(event.data, '*');
 
+      this.moveHistory.add(event.data.move);
+
+      if (this.moveHistory.size === 1) {
+        this.startTimer();
+      }
+
       if (this.isOnlineMode && this.gameId) {
         this.firebaseService.updateGame(this.gameId, event.data.move, event.data.turn);
       }
@@ -69,7 +79,6 @@ export class MainComponent implements AfterViewInit, OnInit {
   changeBoardColor(event: any): void {
     this.selectedColorScheme = event.target.value;
     const selectedColors = this.boardColors[this.selectedColorScheme];
-
     this.gameStateService.setBoardColor(selectedColors.dark, selectedColors.light);
     this.updateBoardColors();
   }
@@ -84,6 +93,8 @@ export class MainComponent implements AfterViewInit, OnInit {
   resetGame(): void {
     const confirmReset = confirm('Are you sure you want to reset the game?');
     if (confirmReset) {
+      this.moveHistory = new Set();
+      this.resetTimer();
       [this.iframe1, this.iframe2].forEach((iframe, index) => {
         if (iframe?.nativeElement.contentWindow) {
           iframe.nativeElement.contentWindow.postMessage({ type: 'resetGame' }, '*');
@@ -114,5 +125,18 @@ export class MainComponent implements AfterViewInit, OnInit {
         this.iframe2?.nativeElement.classList.add('hidden');
       }
     });
+  }
+
+  startTimer(): void {
+    this.elapsedTime = 0;
+    clearInterval(this.timerInterval);
+    this.timerInterval = setInterval(() => {
+      this.elapsedTime++;
+    }, 1000);
+  }
+
+  resetTimer(): void {
+    clearInterval(this.timerInterval);
+    this.elapsedTime = 0;
   }
 }
