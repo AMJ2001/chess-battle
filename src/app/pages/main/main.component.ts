@@ -7,6 +7,7 @@ import { FirebaseService } from 'src/app/services/firebase.service';
   templateUrl: './main.component.html',
   styleUrls: ['./main.component.scss'],
 })
+
 export class MainComponent implements AfterViewInit, OnInit {
   @ViewChild('iframe1') iframe1!: ElementRef;
   @ViewChild('iframe2') iframe2!: ElementRef;

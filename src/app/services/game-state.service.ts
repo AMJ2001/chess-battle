@@ -11,7 +11,7 @@ export class GameStateService {
   gameState$ = this.gameStateSubject.asObservable();
 
 resetGameState() {
-  this.gameStateSubject.next({ isReset: true }); // Emit reset state
+  this.gameStateSubject.next({ isReset: true });
 }
 
 setGameReset(isReset: boolean) {
