@@ -55,16 +55,17 @@ export class IframeComponent implements OnInit, AfterViewInit {
 
   receiveMessage(event: MessageEvent): void {
     if (event.origin !== window.location.origin) return;
-
+    
     if (event.data?.move) {
-      this.board.move(event.data.move);
-    }  else if (event.data?.type === 'changeColor') {
+      this.board.move(event.data.move); 
+    } else if (event.data?.type === 'changeColor') {
       this.board.darkTileColor = event.data.colors.dark;
       this.board.lightTileColor = event.data.colors.light;
     } else if (event.data?.fen) {
       this.board.setFEN(event.data.fen);
     }
   }
+  
 
   loadGameState(): void {
     const savedState = localStorage.getItem('chessGameState');

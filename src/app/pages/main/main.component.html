@@ -11,7 +11,7 @@
     </select>
   </div>
 
-  <div class="controls">
+  <div *ngIf="!isGameActive" class="controls">
     <button (click)="resetGame()">Reset Game</button>
     <button (click)="createOnlineGame()">Create Online Game</button>
     <input type="text" [(ngModel)]="gameId" placeholder="Enter game code">

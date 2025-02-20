@@ -26,6 +26,7 @@ export class MainComponent implements AfterViewInit, OnInit {
   moveHistory = new Set<string>();
   elapsedTime: number = 0;
   timerInterval: any;
+  isGameActive = false;
 
   constructor(private gameStateService: GameStateService, private firebaseService: FirebaseService, private cdr: ChangeDetectorRef) {}
 
@@ -40,14 +41,17 @@ export class MainComponent implements AfterViewInit, OnInit {
     if (storedMoves) {
       this.moveHistory = new Set(JSON.parse(storedMoves));
     }
-
+    
     this.gameStateService.gameState$.subscribe((state) => {
       if (state?.isReset) {
         this.selectedColorScheme = 'classic';
         this.updateBoardColors();
-        this.resetTimer();
       }
     });
+
+    if (this.gameId) {
+      this.listenToGameUpdates();
+    }
   }
 
   ngAfterViewInit(): void {
@@ -57,30 +61,43 @@ export class MainComponent implements AfterViewInit, OnInit {
 
   onMessage(event: MessageEvent): void {
     if (event.origin !== window.location.origin) return;
-
+  
     if (event.data?.move) {
-      const targetIframe =
-        event.source === this.iframe1.nativeElement.contentWindow
-          ? this.iframe2.nativeElement.contentWindow
-          : this.iframe1.nativeElement.contentWindow;
+      const targetIframe = event.source === this.iframe1?.nativeElement?.contentWindow
+          ? this.iframe2?.nativeElement?.contentWindow
+          : this.iframe1?.nativeElement?.contentWindow;
       targetIframe?.postMessage(event.data, '*');
 
       this.moveHistory.add(event.data.move);
-      localStorage.setItem('movesSet', JSON.stringify([...this.moveHistory]));
+      !this.isOnlineMode && localStorage.setItem('movesSet', JSON.stringify([...this.moveHistory]));
 
       if (this.moveHistory.size === 1) {
         this.startTimer();
       }
 
       if (this.isOnlineMode && this.gameId) {
-        this.firebaseService.updateGame(this.gameId, event.data.move, event.data.turn);
+        const turn = event.data.fen.split(" ")[1]; 
+        this.firebaseService.updateGame(this.gameId, [...this.moveHistory], turn || "w");
       }
     }
-
+  
     if (event.data?.checkmate) {
       alert('Checkmate! Game over.');
       this.resetGame();
     }
+  }
+
+  listenToGameUpdates(): void {
+    if (!this.gameId) return;
+
+    console.log("Listening for updates for game:", this.gameId);
+    
+    this.firebaseService.listenToGame(this.gameId).subscribe((gameData) => {
+      if (gameData?.moves) {
+        console.log("Received game updates:", gameData);
+        this.loadGameMoves(gameData.moves);
+      }
+    });
   }
 
   changeBoardColor(event: any): void {
@@ -101,6 +118,7 @@ export class MainComponent implements AfterViewInit, OnInit {
     const confirmReset = confirm('Are you sure you want to reset the game?');
     if (confirmReset) {
       this.moveHistory = new Set();
+      localStorage.removeItem('movesSet');
       this.resetTimer();
       [this.iframe1, this.iframe2].forEach((iframe, index) => {
         if (iframe?.nativeElement.contentWindow) {
@@ -110,28 +128,28 @@ export class MainComponent implements AfterViewInit, OnInit {
         }
       });
       if (this.gameId) {
-        this.firebaseService.updateGame(this.gameId, [], 'white', true);
+        this.firebaseService.updateGame(this.gameId, [], 'white');
       }
     }
   }
 
   createOnlineGame(): void {
     this.createdByCurrentUser = true;
+    this.resetGame();
     this.gameId = this.firebaseService.createGame();
+    this.isOnlineMode = true;
+    this.isGameActive = true;
+
     alert(`Game created! Share this code: ${this.gameId}`);
+    this.listenToGameUpdates();
   }
 
   joinOnlineGame(code: string | null): void {
+    if (!code) return;
     this.gameId = code;
     this.isOnlineMode = true;
-    this.firebaseService.joinGame(code as string).subscribe((gameData) => {
-      if (gameData?.moves) {
-        [this.iframe1].forEach((iframe) => {
-          iframe?.nativeElement.contentWindow?.postMessage({ type: 'loadMoves', moves: gameData.moves }, '*');
-        });
-        this.iframe2?.nativeElement.classList.add('hidden');
-      }
-    });
+    this.isGameActive = true;
+    this.listenToGameUpdates();
   }
 
   startTimer(): void {
@@ -146,4 +164,16 @@ export class MainComponent implements AfterViewInit, OnInit {
     clearInterval(this.timerInterval);
     this.elapsedTime = 0;
   }
+
+  loadGameMoves(gameData: any) {
+    if (gameData?.length > 0) {
+      this.startTimer();
+      const latestMove = gameData[gameData.length - 1];
+      const iframe = document.querySelector('iframe') as HTMLIFrameElement;
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ move: latestMove }, '*');
+      }
+    }
+  }
+  
 }
