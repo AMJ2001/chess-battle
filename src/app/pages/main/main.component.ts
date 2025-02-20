@@ -133,10 +133,14 @@ export class MainComponent implements AfterViewInit, OnInit {
     }
   }
 
-  createOnlineGame(): void {
+  async createOnlineGame(): Promise<void> {
     this.createdByCurrentUser = true;
     this.resetGame();
-    this.gameId = this.firebaseService.createGame();
+    this.gameId = await this.firebaseService.createGame();
+    if (!this.gameId || !this.gameId.length) {
+      window.alert("Unable to create game.");
+      return;
+    }
     this.isOnlineMode = true;
     this.isGameActive = true;
 

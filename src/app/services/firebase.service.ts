@@ -5,17 +5,25 @@ import { GameStateService } from './game-state.service';
 
 @Injectable({ providedIn: 'root' })
 export class FirebaseService {
-  constructor(private db: AngularFireDatabase, private gameStateService: GameStateService) {}
+  constructor(private db: AngularFireDatabase) {}
   
-  createGame(): string {
-    const gameRef = this.db.list('games').push({
+  async createGame(): Promise<string> {
+    const snapshot = await this.db.list('games').query.once('value');
+    const existingGameIds = Object.keys(snapshot.val() || {});
+    let gameId = `game_${existingGameIds.length + 1}`;
+  
+    while (existingGameIds.includes(gameId)) {
+      gameId = `game_${existingGameIds.length + 1}`;
+    }
+  
+    const newGameRef = await this.db.list('games').push({
+      gameId: gameId,
       moves: [],
       turn: 'w',
       isGameActive: true
     });
   
-    console.log("Game created with ID:", gameRef.key);
-    return gameRef.key!;
+    return gameId;
   }
   
   joinGame(gameId: string): Observable<any> {
