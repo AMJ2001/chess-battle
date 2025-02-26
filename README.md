@@ -1,4 +1,4 @@
-# ♟️ Chess Game (Chess Battle) 🔥  
+# ♟️ Chess Battle 🔥  
 
 🚀 **A real-time online chess game!**  
 
